@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>縦スクロールシューティング</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="gameInfo">
+        <div>スコア: <span id="score">0</span></div>
+        <div>ライフ: <span id="lives">3</span></div>
+    </div>
+    
+    <div id="gameStart">
+        <h2>たのしい縦スクロールシューティング</h2>
+        <p>最後のボスはあいつだ🐻！</p>
+        <button id="startBtn">ゲームスタート</button>
+    </div>
+    
+    <div id="gameOver">
+        <h2>GAME OVER</h2>
+        <p id="gameOverMessage">最終スコア: <span id="finalScore">0</span></p>
+        <button id="restartBtn">再プレイ</button>
+    </div>
+    
+    <div id="instructions">
+        <p>矢印キー/WASD: 移動 | スペース: 発射</p>
+    </div>
+    
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    
+    <script src="game.js"></script>
+</body>
+</html>
