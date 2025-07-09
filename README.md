@@ -50,6 +50,6 @@ shooting/
 
 ## プレイ
 
-GitHub Pagesでプレイできます: [ゲームをプレイ](https://your-username.github.io/shooting-game/)
+GitHub Pagesでプレイできます: [ゲームをプレイ](https://katanjk.github.io/shooting-game/)
 
 最後のボスはあいつだ🐻！
