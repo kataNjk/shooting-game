@@ -575,10 +575,10 @@ function updatePlayer() {
         moveY += 1;
     }
     
-    // タッチ操作の処理
+    // タッチ操作の処理（モバイルの場合は1.5倍速）
     if (gameState.isMobile) {
-        moveX += gameState.touchMove.x;
-        moveY += gameState.touchMove.y;
+        moveX += gameState.touchMove.x * 1.5;
+        moveY += gameState.touchMove.y * 1.5;
     }
     
     // 斜め移動の場合は速度を調整（√2で割る）
@@ -587,9 +587,10 @@ function updatePlayer() {
         moveY *= 0.707;
     }
     
-    // 実際の移動
-    let newX = player.x + moveX * player.speed;
-    let newY = player.y + moveY * player.speed;
+    // 実際の移動（モバイルの場合はさらに速度調整）
+    const speedMultiplier = gameState.isMobile ? 1.2 : 1.0;
+    let newX = player.x + moveX * player.speed * speedMultiplier;
+    let newY = player.y + moveY * player.speed * speedMultiplier;
     
     // 画面範囲内に制限
     if (newX < 0) newX = 0;
