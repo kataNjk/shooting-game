@@ -396,13 +396,31 @@ window.addEventListener('blur', () => {
 
 // モバイル検出
 function detectMobile() {
-    gameState.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 850;
+    // より確実なモバイル検出
+    const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isMobileScreen = window.innerWidth <= 850;
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     
-    if (gameState.isMobile) {
-        document.getElementById('mobileControls').classList.add('show');
+    gameState.isMobile = isMobileUA || isMobileScreen || isTouchDevice;
+    
+    console.log('Mobile detection:', {
+        userAgent: isMobileUA,
+        screenSize: isMobileScreen,
+        touchDevice: isTouchDevice,
+        isMobile: gameState.isMobile
+    });
+    
+    const mobileControls = document.getElementById('mobileControls');
+    if (gameState.isMobile && mobileControls) {
+        mobileControls.classList.add('show');
+        mobileControls.style.display = 'block';
+        console.log('Mobile controls enabled');
+        
         // キャンバスサイズを調整
         canvas.style.width = Math.min(window.innerWidth, 800) + 'px';
         canvas.style.height = Math.min(window.innerHeight * 0.75, 600) + 'px';
+    } else {
+        console.log('Mobile controls disabled');
     }
 }
 
@@ -415,6 +433,14 @@ function setupTouchControls() {
     const joystick = document.getElementById('joystick');
     const joystickKnob = document.getElementById('joystickKnob');
     const shootButton = document.getElementById('shootButton');
+    
+    // 要素が存在しない場合は処理を停止
+    if (!joystick || !joystickKnob || !shootButton) {
+        console.log('Touch control elements not found');
+        return;
+    }
+    
+    console.log('Setting up touch controls');
     
     // ジョイスティックの中心座標を取得
     function getJoystickCenter() {
@@ -483,12 +509,40 @@ function setupTouchControls() {
 }
 
 // 初期化時にモバイル検出とタッチ操作を設定
-detectMobile();
-setupTouchControls();
+document.addEventListener('DOMContentLoaded', () => {
+    detectMobile();
+    setupTouchControls();
+});
+
+// ページ読み込み完了後にも実行
+window.addEventListener('load', () => {
+    detectMobile();
+    setupTouchControls();
+});
 
 // ウィンドウリサイズ時の処理
 window.addEventListener('resize', () => {
     detectMobile();
+});
+
+// 即座に実行も追加
+detectMobile();
+setupTouchControls();
+
+// デバッグ用：モバイル操作の強制切り替え
+document.getElementById('toggleMobile').addEventListener('click', () => {
+    gameState.isMobile = !gameState.isMobile;
+    const mobileControls = document.getElementById('mobileControls');
+    
+    if (gameState.isMobile) {
+        mobileControls.classList.add('show');
+        mobileControls.style.display = 'block';
+        console.log('Mobile controls force enabled');
+    } else {
+        mobileControls.classList.remove('show');
+        mobileControls.style.display = 'none';
+        console.log('Mobile controls force disabled');
+    }
 });
 
 // スタートボタンのクリック処理

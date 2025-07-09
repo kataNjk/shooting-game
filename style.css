@@ -100,7 +100,7 @@ canvas {
 }
 
 #mobileControls.show {
-    display: block;
+    display: block !important;
 }
 
 #joystick {
@@ -161,7 +161,7 @@ canvas {
     }
     
     #mobileControls {
-        display: block;
+        display: block !important;
     }
     
     #gameInfo {
@@ -172,6 +172,13 @@ canvas {
     
     #instructions {
         display: none;
+    }
+}
+
+/* Force show mobile controls on touch devices */
+@media (hover: none) and (pointer: coarse) {
+    #mobileControls {
+        display: block !important;
     }
 }
 
