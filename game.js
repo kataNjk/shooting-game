@@ -11,7 +11,11 @@ let gameState = {
     keys: {},
     lastTime: 0,
     shootTimer: 0,
-    backgroundY: 0
+    backgroundY: 0,
+    // モバイル操作用
+    touchMove: { x: 0, y: 0 },
+    touchShoot: false,
+    isMobile: false
 };
 
 // プレイヤー
@@ -390,6 +394,103 @@ window.addEventListener('blur', () => {
     gameState.keys = {};
 });
 
+// モバイル検出
+function detectMobile() {
+    gameState.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 850;
+    
+    if (gameState.isMobile) {
+        document.getElementById('mobileControls').classList.add('show');
+        // キャンバスサイズを調整
+        canvas.style.width = Math.min(window.innerWidth, 800) + 'px';
+        canvas.style.height = Math.min(window.innerHeight * 0.75, 600) + 'px';
+    }
+}
+
+// タッチ操作処理
+let joystickActive = false;
+let joystickCenter = { x: 0, y: 0 };
+let joystickRadius = 50;
+
+function setupTouchControls() {
+    const joystick = document.getElementById('joystick');
+    const joystickKnob = document.getElementById('joystickKnob');
+    const shootButton = document.getElementById('shootButton');
+    
+    // ジョイスティックの中心座標を取得
+    function getJoystickCenter() {
+        const rect = joystick.getBoundingClientRect();
+        return {
+            x: rect.left + rect.width / 2,
+            y: rect.top + rect.height / 2
+        };
+    }
+    
+    // ジョイスティック操作
+    joystick.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        joystickActive = true;
+        joystickCenter = getJoystickCenter();
+    });
+    
+    joystick.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (!joystickActive) return;
+        
+        const touch = e.touches[0];
+        const deltaX = touch.clientX - joystickCenter.x;
+        const deltaY = touch.clientY - joystickCenter.y;
+        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        
+        if (distance <= joystickRadius) {
+            joystickKnob.style.transform = `translate(${deltaX - 20}px, ${deltaY - 20}px)`;
+            gameState.touchMove.x = deltaX / joystickRadius;
+            gameState.touchMove.y = deltaY / joystickRadius;
+        } else {
+            const angle = Math.atan2(deltaY, deltaX);
+            const limitedX = Math.cos(angle) * joystickRadius;
+            const limitedY = Math.sin(angle) * joystickRadius;
+            joystickKnob.style.transform = `translate(${limitedX - 20}px, ${limitedY - 20}px)`;
+            gameState.touchMove.x = Math.cos(angle);
+            gameState.touchMove.y = Math.sin(angle);
+        }
+    });
+    
+    joystick.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        joystickActive = false;
+        joystickKnob.style.transform = 'translate(-50%, -50%)';
+        gameState.touchMove.x = 0;
+        gameState.touchMove.y = 0;
+    });
+    
+    // 発射ボタン
+    shootButton.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        gameState.touchShoot = true;
+    });
+    
+    shootButton.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        gameState.touchShoot = false;
+    });
+    
+    // タッチイベントの伝播を防ぐ
+    document.addEventListener('touchmove', (e) => {
+        if (e.target.closest('#mobileControls')) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+}
+
+// 初期化時にモバイル検出とタッチ操作を設定
+detectMobile();
+setupTouchControls();
+
+// ウィンドウリサイズ時の処理
+window.addEventListener('resize', () => {
+    detectMobile();
+});
+
 // スタートボタンのクリック処理
 document.getElementById('startBtn').addEventListener('click', () => {
     startGame();
@@ -420,6 +521,12 @@ function updatePlayer() {
         moveY += 1;
     }
     
+    // タッチ操作の処理
+    if (gameState.isMobile) {
+        moveX += gameState.touchMove.x;
+        moveY += gameState.touchMove.y;
+    }
+    
     // 斜め移動の場合は速度を調整（√2で割る）
     if (moveX !== 0 && moveY !== 0) {
         moveX *= 0.707; // 約1/√2
@@ -440,7 +547,7 @@ function updatePlayer() {
     player.y = newY;
     
     // 弾丸発射処理を最後に行う
-    if (gameState.keys['Space']) {
+    if (gameState.keys['Space'] || gameState.touchShoot) {
         if (gameState.shootTimer <= 0) {
             bullets.push(new Bullet(player.x + player.width/2, player.y, -8));
             gameState.shootTimer = 10;
@@ -716,6 +823,8 @@ function restartGame() {
     gameState.shootTimer = 0;
     gameState.backgroundY = 0;
     gameState.keys = {};
+    gameState.touchMove = { x: 0, y: 0 };
+    gameState.touchShoot = false;
     player.x = canvas.width / 2 - 15;
     player.y = canvas.height - 80;
     bullets.length = 0;
@@ -729,7 +838,7 @@ function restartGame() {
 }
 
 // メインゲームループ
-function gameLoop(currentTime) {
+function gameLoop() {
     if (gameState.gameStarted && !gameState.gameOver && !gameState.gameCleared) {
         updatePlayer();
         updateBullets();

@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>縦スクロールシューティング</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -28,7 +28,17 @@
         <p>矢印キー/WASD: 移動 | スペース: 発射</p>
     </div>
     
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        
+        <!-- Mobile Controls -->
+        <div id="mobileControls">
+            <div id="joystick">
+                <div id="joystickKnob"></div>
+            </div>
+            <div id="shootButton">発射</div>
+        </div>
+    </div>
     
     <script src="game.js"></script>
 </body>
