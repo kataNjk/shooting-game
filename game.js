@@ -167,6 +167,10 @@ class Boss {
         this.patternTimer = 0;
         this.isActive = false;
         this.damageFlash = 0;
+        this.isDying = false;
+        this.deathTimer = 0;
+        this.deathDuration = 90; // 1.5秒間の死亡アニメーション
+        this.alpha = 1.0;
         
         // ボスタイプ別の設定
         this.setTypeProperties();
@@ -198,6 +202,18 @@ class Boss {
     }
     
     update() {
+        // 死亡アニメーション中
+        if (this.isDying) {
+            this.deathTimer++;
+            this.alpha = Math.max(0, 1 - (this.deathTimer / this.deathDuration));
+            
+            // 少し震える効果
+            this.x += (Math.random() - 0.5) * 4;
+            this.y += (Math.random() - 0.5) * 2;
+            
+            return;
+        }
+        
         // 登場時の移動
         if (!this.isActive) {
             this.y += this.speed;
@@ -229,8 +245,10 @@ class Boss {
             this.patternTimer = 0;
         }
         
-        // ボスタイプ別の攻撃パターン
-        this.performAttack();
+        // ボスタイプ別の攻撃パターン（死亡アニメーション中は攻撃しない）
+        if (!this.isDying) {
+            this.performAttack();
+        }
         
         // ダメージフラッシュのタイマー更新
         if (this.damageFlash > 0) {
@@ -336,6 +354,10 @@ class Boss {
     }
     
     draw() {
+        // アルファ値を適用
+        ctx.save();
+        ctx.globalAlpha = this.alpha;
+        
         const currentImage = bossImages[this.type];
         
         if (currentImage && currentImage.complete) {
@@ -346,8 +368,10 @@ class Boss {
             ctx.fillRect(this.x, this.y, this.width, this.height);
         }
         
-        // 体力バー
-        if (this.isActive) {
+        ctx.restore();
+        
+        // 体力バー（死亡アニメーション中は非表示）
+        if (this.isActive && !this.isDying) {
             const barWidth = 200;
             const barHeight = 10;
             const barX = (canvas.width - barWidth) / 2;
@@ -709,9 +733,16 @@ function updateBoss() {
         boss.update();
         
         // ボスが倒されたかチェック
-        if (boss.health <= 0) {
+        if (boss.health <= 0 && !boss.isDying) {
+            // 死亡アニメーション開始
+            boss.isDying = true;
+            boss.deathTimer = 0;
             gameState.score += 1000;
             bossCount++;
+        }
+        
+        // 死亡アニメーション完了後にボスを削除
+        if (boss.isDying && boss.deathTimer >= boss.deathDuration) {
             boss = null;
             
             // 3種類のボスを倒したらゲームクリア
