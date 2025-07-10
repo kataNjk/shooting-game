@@ -429,15 +429,13 @@ let joystickActive = false;
 let joystickCenter = { x: 0, y: 0 };
 let joystickRadius = 50;
 let joystickTouchId = null;  // ジョイスティックのタッチIDを記録
-let shootButtonTouchId = null;  // 発射ボタンのタッチIDを記録
 
 function setupTouchControls() {
     const joystick = document.getElementById('joystick');
     const joystickKnob = document.getElementById('joystickKnob');
-    const shootButton = document.getElementById('shootButton');
     
     // 要素が存在しない場合は処理を停止
-    if (!joystick || !joystickKnob || !shootButton) {
+    if (!joystick || !joystickKnob) {
         console.log('Touch control elements not found');
         return;
     }
@@ -525,39 +523,6 @@ function setupTouchControls() {
             joystickKnob.style.transform = 'translate(-50%, -50%)';
             gameState.touchMove.x = 0;
             gameState.touchMove.y = 0;
-        }
-    });
-    
-    // 発射ボタン
-    shootButton.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        // 既にアクティブな場合は無視
-        if (gameState.touchShoot) return;
-        
-        // 新しく追加されたタッチを使用（changedTouchesの最初のタッチ）
-        const touch = e.changedTouches[0];
-        shootButtonTouchId = touch.identifier;
-        gameState.touchShoot = true;
-    });
-    
-    shootButton.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        // 終了したタッチが発射ボタンのタッチかチェック
-        let shootButtonTouchEnded = false;
-        for (let i = 0; i < e.changedTouches.length; i++) {
-            if (e.changedTouches[i].identifier === shootButtonTouchId) {
-                shootButtonTouchEnded = true;
-                break;
-            }
-        }
-        
-        if (shootButtonTouchEnded) {
-            gameState.touchShoot = false;
-            shootButtonTouchId = null;
         }
     });
     
@@ -663,7 +628,7 @@ function updatePlayer() {
     player.y = newY;
     
     // 弾丸発射処理を最後に行う
-    if (gameState.keys['Space'] || gameState.touchShoot) {
+    if (gameState.keys['Space'] || gameState.touchShoot || gameState.isMobile) {
         if (gameState.shootTimer <= 0) {
             bullets.push(new Bullet(player.x + player.width/2, player.y, -8));
             gameState.shootTimer = 10;

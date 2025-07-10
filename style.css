@@ -139,7 +139,7 @@ canvas {
     color: #fff;
     font-size: 14px;
     font-weight: bold;
-    display: flex;
+    display: none; /* モバイルでは非表示 */
     align-items: center;
     justify-content: center;
     pointer-events: all;
