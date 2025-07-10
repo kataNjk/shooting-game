@@ -364,8 +364,8 @@ class Boss {
 
 // キー入力処理
 document.addEventListener('keydown', (e) => {
-    // ゲームに関連するキーのみ処理（矢印キー + WASD + スペース）
-    const gameKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space', 'KeyW', 'KeyA', 'KeyS', 'KeyD'];
+    // ゲームに関連するキーのみ処理（矢印キー + WASD）
+    const gameKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'KeyW', 'KeyA', 'KeyS', 'KeyD'];
     if (gameKeys.includes(e.code)) {
         e.preventDefault();
         gameState.keys[e.code] = true;
@@ -373,8 +373,8 @@ document.addEventListener('keydown', (e) => {
 });
 
 document.addEventListener('keyup', (e) => {
-    // ゲームに関連するキーのみ処理（矢印キー + WASD + スペース）
-    const gameKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space', 'KeyW', 'KeyA', 'KeyS', 'KeyD'];
+    // ゲームに関連するキーのみ処理（矢印キー + WASD）
+    const gameKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'KeyW', 'KeyA', 'KeyS', 'KeyD'];
     if (gameKeys.includes(e.code)) {
         e.preventDefault();
         gameState.keys[e.code] = false;
@@ -627,12 +627,10 @@ function updatePlayer() {
     player.x = newX;
     player.y = newY;
     
-    // 弾丸発射処理を最後に行う
-    if (gameState.keys['Space'] || gameState.touchShoot || gameState.isMobile) {
-        if (gameState.shootTimer <= 0) {
-            bullets.push(new Bullet(player.x + player.width/2, player.y, -8));
-            gameState.shootTimer = 10;
-        }
+    // 弾丸発射処理を最後に行う（常に自動発射）
+    if (gameState.shootTimer <= 0) {
+        bullets.push(new Bullet(player.x + player.width/2, player.y, -8));
+        gameState.shootTimer = 10;
     }
     
     if (gameState.shootTimer > 0) {
