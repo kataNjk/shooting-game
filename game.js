@@ -468,8 +468,11 @@ function setupTouchControls() {
         e.preventDefault();
         e.stopPropagation();
         
-        // 最初のタッチを使用
-        const touch = e.touches[0];
+        // 既にアクティブな場合は無視
+        if (joystickActive) return;
+        
+        // 新しく追加されたタッチを使用（changedTouchesの最初のタッチ）
+        const touch = e.changedTouches[0];
         joystickTouchId = touch.identifier;
         joystickActive = true;
         joystickCenter = getJoystickCenter();
@@ -530,8 +533,11 @@ function setupTouchControls() {
         e.preventDefault();
         e.stopPropagation();
         
-        // 最初のタッチを使用
-        const touch = e.touches[0];
+        // 既にアクティブな場合は無視
+        if (gameState.touchShoot) return;
+        
+        // 新しく追加されたタッチを使用（changedTouchesの最初のタッチ）
+        const touch = e.changedTouches[0];
         shootButtonTouchId = touch.identifier;
         gameState.touchShoot = true;
     });
