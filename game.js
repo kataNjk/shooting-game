@@ -428,6 +428,8 @@ function detectMobile() {
 let joystickActive = false;
 let joystickCenter = { x: 0, y: 0 };
 let joystickRadius = 50;
+let joystickTouchId = null;  // ジョイスティックのタッチIDを記録
+let shootButtonTouchId = null;  // 発射ボタンのタッチIDを記録
 
 function setupTouchControls() {
     const joystick = document.getElementById('joystick');
@@ -451,18 +453,38 @@ function setupTouchControls() {
         };
     }
     
+    // 特定のタッチIDを持つタッチイベントを取得
+    function getTouchById(touches, id) {
+        for (let i = 0; i < touches.length; i++) {
+            if (touches[i].identifier === id) {
+                return touches[i];
+            }
+        }
+        return null;
+    }
+    
     // ジョイスティック操作
     joystick.addEventListener('touchstart', (e) => {
         e.preventDefault();
+        e.stopPropagation();
+        
+        // 最初のタッチを使用
+        const touch = e.touches[0];
+        joystickTouchId = touch.identifier;
         joystickActive = true;
         joystickCenter = getJoystickCenter();
     });
     
     joystick.addEventListener('touchmove', (e) => {
         e.preventDefault();
-        if (!joystickActive) return;
+        e.stopPropagation();
         
-        const touch = e.touches[0];
+        if (!joystickActive || joystickTouchId === null) return;
+        
+        // 特定のタッチIDを持つタッチを取得
+        const touch = getTouchById(e.touches, joystickTouchId);
+        if (!touch) return;
+        
         const deltaX = touch.clientX - joystickCenter.x;
         const deltaY = touch.clientY - joystickCenter.y;
         const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
@@ -483,21 +505,54 @@ function setupTouchControls() {
     
     joystick.addEventListener('touchend', (e) => {
         e.preventDefault();
-        joystickActive = false;
-        joystickKnob.style.transform = 'translate(-50%, -50%)';
-        gameState.touchMove.x = 0;
-        gameState.touchMove.y = 0;
+        e.stopPropagation();
+        
+        // 終了したタッチがジョイスティックのタッチかチェック
+        let joystickTouchEnded = false;
+        for (let i = 0; i < e.changedTouches.length; i++) {
+            if (e.changedTouches[i].identifier === joystickTouchId) {
+                joystickTouchEnded = true;
+                break;
+            }
+        }
+        
+        if (joystickTouchEnded) {
+            joystickActive = false;
+            joystickTouchId = null;
+            joystickKnob.style.transform = 'translate(-50%, -50%)';
+            gameState.touchMove.x = 0;
+            gameState.touchMove.y = 0;
+        }
     });
     
     // 発射ボタン
     shootButton.addEventListener('touchstart', (e) => {
         e.preventDefault();
+        e.stopPropagation();
+        
+        // 最初のタッチを使用
+        const touch = e.touches[0];
+        shootButtonTouchId = touch.identifier;
         gameState.touchShoot = true;
     });
     
     shootButton.addEventListener('touchend', (e) => {
         e.preventDefault();
-        gameState.touchShoot = false;
+        e.stopPropagation();
+        
+        // 終了したタッチが発射ボタンのタッチかチェック
+        let shootButtonTouchEnded = false;
+        for (let i = 0; i < e.changedTouches.length; i++) {
+            if (e.changedTouches[i].identifier === shootButtonTouchId) {
+                shootButtonTouchEnded = true;
+                break;
+            }
+        }
+        
+        if (shootButtonTouchEnded) {
+            gameState.touchShoot = false;
+            shootButtonTouchId = null;
+        }
     });
     
     // タッチイベントの伝播を防ぐ
