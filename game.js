@@ -51,6 +51,12 @@ bossImages.boss3.src = 'images/boss3.png';
 // ボス出現回数
 let bossCount = 0;
 
+// 敵の色リスト（ボスを倒すごとに変更）
+const enemyColors = ['#ff0000', '#ff6600', '#ff00ff', '#00ffff'];
+function getEnemyColor() {
+    return enemyColors[Math.min(bossCount, enemyColors.length - 1)];
+}
+
 // ダメージ表示配列
 const damageTexts = [];
 
@@ -110,7 +116,7 @@ class Enemy {
         this.width = 30;
         this.height = 30;
         this.speed = 2;
-        this.color = '#ff0000';
+        this.color = getEnemyColor();
         this.type = type;
         this.shootTimer = 0;
         this.health = 1;
@@ -131,8 +137,15 @@ class Enemy {
         ctx.fillStyle = this.color;
         ctx.fillRect(this.x, this.y, this.width, this.height);
         
-        // 簡単な敵の形状
-        ctx.fillStyle = '#ff4444';
+        // 簡単な敵の形状（ベースカラーより少し明るく）
+        const lighterColor = this.color.replace('#', '#').length === 7 ? 
+            '#' + this.color.slice(1).replace(/(..)(..)(..)/, (_, r, g, b) => 
+                Math.min(255, parseInt(r, 16) + 40).toString(16).padStart(2, '0') +
+                Math.min(255, parseInt(g, 16) + 40).toString(16).padStart(2, '0') +
+                Math.min(255, parseInt(b, 16) + 40).toString(16).padStart(2, '0')
+            ) : '#ff4444';
+        
+        ctx.fillStyle = lighterColor;
         ctx.fillRect(this.x + 5, this.y + 5, 20, 10);
         ctx.fillRect(this.x + 10, this.y + 15, 10, 10);
     }
@@ -292,11 +305,11 @@ class Boss {
         } else if (this.type === 'boss3') {
             // ダンシングベア: パワフル弾、ランダム弾
             if (this.attackPattern === 0 && this.shootTimer > 15) {
-                enemyBullets.push(new Bullet(this.x + this.width/2, this.y + this.height, 5, '#8b4513'));
+                enemyBullets.push(new Bullet(this.x + this.width/2, this.y + this.height, 5, '#ff8c00'));
                 this.shootTimer = 0;
             } else if (this.attackPattern === 1 && this.shootTimer > 20) {
                 const angle = (Math.random() - 0.5) * Math.PI / 2;
-                const bullet = new Bullet(this.x + this.width/2, this.y + this.height, 4, '#8b4513');
+                const bullet = new Bullet(this.x + this.width/2, this.y + this.height, 4, '#ff8c00');
                 bullet.speedX = Math.sin(angle) * 3;
                 bullet.speedY = Math.cos(angle) * 4;
                 bullet.update = function() {
@@ -308,7 +321,7 @@ class Boss {
             } else if (this.attackPattern === 2 && this.shootTimer > 25) {
                 for (let i = 0; i < 8; i++) {
                     const angle = (i * Math.PI * 2) / 8;
-                    const bullet = new Bullet(this.x + this.width/2, this.y + this.height, 3, '#8b4513');
+                    const bullet = new Bullet(this.x + this.width/2, this.y + this.height, 3, '#ff8c00');
                     bullet.speedX = Math.cos(angle) * 2;
                     bullet.speedY = Math.sin(angle) * 2;
                     bullet.update = function() {
