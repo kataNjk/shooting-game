@@ -35,6 +35,9 @@ const enemyBullets = [];
 // 敵配列
 const enemies = [];
 
+// 障害物配列
+const obstacles = [];
+
 // ボス
 let boss = null;
 
@@ -103,8 +106,17 @@ class Bullet {
     }
     
     draw() {
+        // 弾丸を絵文字で描画
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'center';
         ctx.fillStyle = this.color;
-        ctx.fillRect(this.x, this.y, this.width, this.height);
+        if (this.speed < 0) {
+            // プレイヤーの弾丸（上向き）
+            ctx.fillText('💫', this.x + this.width/2, this.y + this.height);
+        } else {
+            // 敵の弾丸（下向き）
+            ctx.fillText('💥', this.x + this.width/2, this.y + this.height);
+        }
     }
 }
 
@@ -115,39 +127,162 @@ class Enemy {
         this.y = y;
         this.width = 30;
         this.height = 30;
-        this.speed = 2;
-        this.color = getEnemyColor();
         this.type = type;
         this.shootTimer = 0;
-        this.health = 1;
+        this.moveTimer = 0;
+        this.direction = Math.random() > 0.5 ? 1 : -1;
+        
+        // タイプ別の設定
+        this.setTypeProperties();
+    }
+    
+    setTypeProperties() {
+        switch(this.type) {
+            case 'normal':
+                this.speed = 2;
+                this.health = 1;
+                this.shootRate = 0.02;
+                this.emoji = '👾';
+                this.points = 10;
+                break;
+            case 'fast':
+                this.speed = 4;
+                this.health = 1;
+                this.shootRate = 0.03;
+                this.emoji = '🛸';
+                this.points = 15;
+                break;
+            case 'tank':
+                this.speed = 1;
+                this.health = 3;
+                this.shootRate = 0.01;
+                this.emoji = '🤖';
+                this.points = 25;
+                break;
+            case 'zigzag':
+                this.speed = 2;
+                this.health = 2;
+                this.shootRate = 0.015;
+                this.emoji = '🐙';
+                this.points = 20;
+                break;
+            case 'bomber':
+                this.speed = 1.5;
+                this.health = 2;
+                this.shootRate = 0.04;
+                this.emoji = '💀';
+                this.points = 30;
+                break;
+        }
     }
     
     update() {
+        // タイプ別の移動パターン
+        if (this.type === 'zigzag') {
+            this.moveTimer++;
+            if (this.moveTimer > 30) {
+                this.direction *= -1;
+                this.moveTimer = 0;
+            }
+            this.x += this.direction * 1;
+            // 画面端での反転
+            if (this.x <= 0 || this.x >= canvas.width - this.width) {
+                this.direction *= -1;
+            }
+        }
+        
         this.y += this.speed;
         this.shootTimer++;
         
-        // 敵の弾丸発射
-        if (this.shootTimer > 60 && Math.random() < 0.02) {
-            enemyBullets.push(new Bullet(this.x + this.width/2, this.y + this.height, 3, '#ff4444'));
+        // 敵の弾丸発射（タイプ別の発射率）
+        if (this.shootTimer > 60 && Math.random() < this.shootRate) {
+            if (this.type === 'bomber') {
+                // 爆撃機は3発同時発射
+                for (let i = -1; i <= 1; i++) {
+                    enemyBullets.push(new Bullet(this.x + this.width/2 + i * 10, this.y + this.height, 3, '#ff4444'));
+                }
+            } else {
+                enemyBullets.push(new Bullet(this.x + this.width/2, this.y + this.height, 3, '#ff4444'));
+            }
             this.shootTimer = 0;
         }
     }
     
     draw() {
-        ctx.fillStyle = this.color;
-        ctx.fillRect(this.x, this.y, this.width, this.height);
+        // 敵をタイプ別絵文字で描画
+        ctx.font = '30px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(this.emoji, this.x + this.width/2, this.y + this.height - 5);
         
-        // 簡単な敵の形状（ベースカラーより少し明るく）
-        const lighterColor = this.color.replace('#', '#').length === 7 ? 
-            '#' + this.color.slice(1).replace(/(..)(..)(..)/, (_, r, g, b) => 
-                Math.min(255, parseInt(r, 16) + 40).toString(16).padStart(2, '0') +
-                Math.min(255, parseInt(g, 16) + 40).toString(16).padStart(2, '0') +
-                Math.min(255, parseInt(b, 16) + 40).toString(16).padStart(2, '0')
-            ) : '#ff4444';
+        // タンクタイプの場合、体力バーを表示
+        if (this.type === 'tank' && this.health < 3) {
+            const barWidth = 20;
+            const barHeight = 3;
+            const barX = this.x + (this.width - barWidth) / 2;
+            const barY = this.y - 8;
+            
+            ctx.fillStyle = '#333';
+            ctx.fillRect(barX, barY, barWidth, barHeight);
+            ctx.fillStyle = '#ff0000';
+            ctx.fillRect(barX, barY, (this.health / 3) * barWidth, barHeight);
+        }
+    }
+}
+
+// 障害物クラス
+class Obstacle {
+    constructor(x, y, type = 'destructible') {
+        this.x = x;
+        this.y = y;
+        this.width = 40;
+        this.height = 30;
+        this.type = type;
+        this.speed = 1;
         
-        ctx.fillStyle = lighterColor;
-        ctx.fillRect(this.x + 5, this.y + 5, 20, 10);
-        ctx.fillRect(this.x + 10, this.y + 15, 10, 10);
+        if (type === 'destructible') {
+            this.health = 3;
+            this.maxHealth = 3;
+            this.emoji = '📦';
+            this.points = 5;
+        } else {
+            this.health = Infinity;
+            this.maxHealth = Infinity;
+            this.emoji = '🗿';
+            this.points = 0;
+        }
+    }
+    
+    update() {
+        this.y += this.speed;
+    }
+    
+    draw() {
+        ctx.font = '35px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(this.emoji, this.x + this.width/2, this.y + this.height - 5);
+        
+        // 破壊可能な障害物の体力バー表示
+        if (this.type === 'destructible' && this.health < this.maxHealth) {
+            const barWidth = 30;
+            const barHeight = 4;
+            const barX = this.x + (this.width - barWidth) / 2;
+            const barY = this.y - 8;
+            
+            ctx.fillStyle = '#333';
+            ctx.fillRect(barX, barY, barWidth, barHeight);
+            ctx.fillStyle = '#00ff00';
+            ctx.fillRect(barX, barY, (this.health / this.maxHealth) * barWidth, barHeight);
+        }
+    }
+    
+    takeDamage(damage = 1) {
+        if (this.type === 'destructible') {
+            this.health -= damage;
+            return this.health <= 0;
+        }
+        return false; // 破壊不可能
     }
 }
 
@@ -704,6 +839,16 @@ function updateEnemies() {
     }
 }
 
+// 障害物更新
+function updateObstacles() {
+    for (let i = obstacles.length - 1; i >= 0; i--) {
+        obstacles[i].update();
+        if (obstacles[i].y > canvas.height) {
+            obstacles.splice(i, 1);
+        }
+    }
+}
+
 // 敵生成
 function spawnEnemy() {
     // ボス出現条件
@@ -714,7 +859,7 @@ function spawnEnemy() {
         } else if (bossCount === 1 && gameState.score >= 1400) {
             boss = new Boss('boss2'); // カッパ
             return;
-        } else if (bossCount === 2 && gameState.score >= 2700) {
+        } else if (bossCount === 2 && gameState.score >= 2900) {
             boss = new Boss('boss3'); // ダンシングベア
             return;
         }
@@ -723,7 +868,33 @@ function spawnEnemy() {
     // 通常の敵生成（ボス戦中は生成しない）
     if (boss === null && Math.random() < 0.02) {
         const x = Math.random() * (canvas.width - 30);
-        enemies.push(new Enemy(x, -30));
+        
+        // スコアに応じて敵の種類を決定
+        const enemyTypes = ['normal', 'fast', 'tank', 'zigzag', 'bomber'];
+        let availableTypes = ['normal'];
+        
+        if (gameState.score >= 50) availableTypes.push('fast');
+        if (gameState.score >= 150) availableTypes.push('tank');
+        if (gameState.score >= 300) availableTypes.push('zigzag');
+        if (gameState.score >= 500) availableTypes.push('bomber');
+        
+        // ランダムで敵タイプを選択（normalが出やすい）
+        let enemyType;
+        const rand = Math.random();
+        if (rand < 0.5) {
+            enemyType = 'normal';
+        } else {
+            enemyType = availableTypes[Math.floor(Math.random() * availableTypes.length)];
+        }
+        
+        enemies.push(new Enemy(x, -30, enemyType));
+    }
+    
+    // 障害物生成
+    if (boss === null && Math.random() < 0.008) {
+        const x = Math.random() * (canvas.width - 40);
+        const obstacleType = Math.random() < 0.7 ? 'destructible' : 'indestructible';
+        obstacles.push(new Obstacle(x, -30, obstacleType));
     }
 }
 
@@ -764,8 +935,33 @@ function checkCollisions() {
                 bullets[i].y + bullets[i].height > enemies[j].y) {
                 
                 bullets.splice(i, 1);
-                enemies.splice(j, 1);
-                gameState.score += 10;
+                enemies[j].health--;
+                
+                if (enemies[j].health <= 0) {
+                    gameState.score += enemies[j].points;
+                    enemies.splice(j, 1);
+                } else {
+                    gameState.score += 1; // ダメージポイント
+                }
+                break;
+            }
+        }
+    }
+    
+    // プレイヤーの弾丸と障害物
+    for (let i = bullets.length - 1; i >= 0; i--) {
+        for (let j = obstacles.length - 1; j >= 0; j--) {
+            if (bullets[i].x < obstacles[j].x + obstacles[j].width &&
+                bullets[i].x + bullets[i].width > obstacles[j].x &&
+                bullets[i].y < obstacles[j].y + obstacles[j].height &&
+                bullets[i].y + bullets[i].height > obstacles[j].y) {
+                
+                bullets.splice(i, 1);
+                
+                if (obstacles[j].takeDamage()) {
+                    gameState.score += obstacles[j].points;
+                    obstacles.splice(j, 1);
+                }
                 break;
             }
         }
@@ -837,6 +1033,35 @@ function checkCollisions() {
             }
         }
     }
+    
+    // プレイヤーと障害物
+    for (let i = obstacles.length - 1; i >= 0; i--) {
+        if (obstacles[i].x < player.x + player.width &&
+            obstacles[i].x + obstacles[i].width > player.x &&
+            obstacles[i].y < player.y + player.height &&
+            obstacles[i].y + obstacles[i].height > player.y) {
+            
+            gameState.lives--;
+            if (gameState.lives <= 0) {
+                gameState.gameOver = true;
+            }
+            break;
+        }
+    }
+    
+    // 敵の弾丸と障害物
+    for (let i = enemyBullets.length - 1; i >= 0; i--) {
+        for (let j = obstacles.length - 1; j >= 0; j--) {
+            if (enemyBullets[i].x < obstacles[j].x + obstacles[j].width &&
+                enemyBullets[i].x + enemyBullets[i].width > obstacles[j].x &&
+                enemyBullets[i].y < obstacles[j].y + obstacles[j].height &&
+                enemyBullets[i].y + enemyBullets[i].height > obstacles[j].y) {
+                
+                enemyBullets.splice(i, 1);
+                break;
+            }
+        }
+    }
 }
 
 // ダメージテキスト更新
@@ -879,14 +1104,11 @@ function draw() {
     // 背景スクロール
     drawScrollingBackground();
     
-    // プレイヤー描画
-    ctx.fillStyle = player.color;
-    ctx.fillRect(player.x, player.y, player.width, player.height);
-    
-    // プレイヤーの形状
-    ctx.fillStyle = '#00ff44';
-    ctx.fillRect(player.x + 5, player.y + 5, 20, 10);
-    ctx.fillRect(player.x + 10, player.y + 15, 10, 10);
+    // プレイヤー描画（絵文字）
+    ctx.font = '30px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('🚀', player.x + player.width/2, player.y + player.height - 5);
     
     // 弾丸描画
     bullets.forEach(bullet => bullet.draw());
@@ -894,6 +1116,9 @@ function draw() {
     
     // 敵描画
     enemies.forEach(enemy => enemy.draw());
+    
+    // 障害物描画
+    obstacles.forEach(obstacle => obstacle.draw());
     
     // ボス描画
     if (boss) {
@@ -953,6 +1178,7 @@ function restartGame() {
     bullets.length = 0;
     enemyBullets.length = 0;
     enemies.length = 0;
+    obstacles.length = 0;
     damageTexts.length = 0;
     boss = null;
     bossCount = 0;
@@ -966,6 +1192,7 @@ function gameLoop() {
         updatePlayer();
         updateBullets();
         updateEnemies();
+        updateObstacles();
         updateBoss();
         updateDamageTexts();
         spawnEnemy();
